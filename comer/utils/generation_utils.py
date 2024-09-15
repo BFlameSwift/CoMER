@@ -4,7 +4,7 @@ from typing import List, Tuple
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
-from comer.datamodule import vocab, vocab_size
+from comer.datamodule import vocab
 from comer.utils.utils import Hypothesis, ce_loss, to_tgt_output
 from einops import rearrange
 from einops.einops import repeat
@@ -202,9 +202,10 @@ class DecodeModel(pl.LightningModule):
             next_token_scores, next_tokens = torch.topk(
                 next_token_scores, 2 * beam_size, dim=1
             )
+            
+            next_indices = next_tokens // len(vocab)
+            next_tokens = next_tokens % len(vocab)
 
-            next_indices = next_tokens // vocab_size
-            next_tokens = next_tokens % vocab_size
 
             if cur_len == 1:
                 input_ids = repeat(input_ids, "b l -> (b m) l", m=beam_size)

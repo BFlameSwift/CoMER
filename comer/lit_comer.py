@@ -10,6 +10,8 @@ from comer.model.comer import CoMER
 from comer.utils.utils import (ExpRateRecorder, Hypothesis, ce_loss,
                                to_bi_tgt_out)
 
+import editdistance
+import json
 
 class LitCoMER(pl.LightningModule):
     def __init__(
@@ -35,6 +37,7 @@ class LitCoMER(pl.LightningModule):
         # training
         learning_rate: float,
         patience: int,
+        vocab_size: int = 113,  
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -50,6 +53,7 @@ class LitCoMER(pl.LightningModule):
             dc=dc,
             cross_coverage=cross_coverage,
             self_coverage=self_coverage,
+            vocab_size=vocab_size,
         )
 
         self.exprate_recorder = ExpRateRecorder()
@@ -112,18 +116,46 @@ class LitCoMER(pl.LightningModule):
     def test_step(self, batch: Batch, _):
         hyps = self.approximate_joint_search(batch.imgs, batch.mask)
         self.exprate_recorder([h.seq for h in hyps], batch.indices)
-        return batch.img_bases, [vocab.indices2label(h.seq) for h in hyps]
+        gts = [vocab.indices2words(ind) for ind in batch.indices]
+        preds = [vocab.indices2words(h.seq) for h in hyps]
+        return batch.img_bases, preds, gts
 
     def test_epoch_end(self, test_outputs) -> None:
         exprate = self.exprate_recorder.compute()
         print(f"Validation ExpRate: {exprate}")
-
+        total = 0
+        final_dict = {0:0,1:0,2:0,3:0}
+        errors_dict = {}
+        predictions_dict = {}
         with zipfile.ZipFile("result.zip", "w") as zip_f:
-            for img_bases, preds in test_outputs:
-                for img_base, pred in zip(img_bases, preds):
+            for img_bases, preds, gts in test_outputs:
+                for img_base, pred, gt in zip(img_bases, preds, gts):
                     content = f"%{img_base}\n${pred}$".encode()
                     with zip_f.open(f"{img_base}.txt", "w") as f:
                         f.write(content)
+                    distance = editdistance.eval(pred, gt)
+                    if distance > 0:
+                        errors_dict[img_base] = {
+                            "pred": " ".join(pred),
+                            "gt": " ".join(gt),
+                            "dist": distance,
+                        }
+                    if distance<= 3:
+                        final_dict[distance] += 1
+                    total += 1
+                    predictions_dict[img_base] = {
+                        "pred": " ".join(pred),
+                        "gt": " ".join(gt),
+                        "dist": distance,
+                    }
+        print("final_dict!!")
+        for key,value in final_dict.items():
+            final_dict[key] = value / total 
+        print(final_dict)
+        with open("errors.json", "w") as f:
+            json.dump(errors_dict, f)
+        with open("predictions.json", "w") as f:
+            json.dump(predictions_dict, f)
 
     def approximate_joint_search(
         self, img: FloatTensor, mask: LongTensor

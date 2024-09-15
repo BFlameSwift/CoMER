@@ -23,6 +23,7 @@ class CoMER(pl.LightningModule):
         dc: int,
         cross_coverage: bool,
         self_coverage: bool,
+        vocab_size: int,
     ):
         super().__init__()
 
@@ -38,6 +39,7 @@ class CoMER(pl.LightningModule):
             dc=dc,
             cross_coverage=cross_coverage,
             self_coverage=self_coverage,
+            vocab_size=vocab_size,
         )
 
     def forward(

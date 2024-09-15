@@ -36,3 +36,34 @@ class CROHMEDataset(Dataset):
 
     def __len__(self):
         return len(self.ds)
+
+
+
+class HMEDataset(Dataset):
+    def __init__(
+        self, ds, is_train: bool, scale_aug: bool, scale_to_limit: bool
+    ) -> None:
+        super().__init__()
+        self.ds = ds
+
+        trans_list = []
+        if is_train and scale_aug:
+            trans_list.append(ScaleAugmentation(K_MIN, K_MAX))
+
+        if scale_to_limit:
+            trans_list.append(
+                ScaleToLimitRange(w_lo=W_LO, w_hi=W_HI, h_lo=H_LO, h_hi=H_HI)
+            )
+
+        trans_list.append(tr.ToTensor())
+        self.transform = tr.Compose(trans_list)
+
+    def __getitem__(self, idx):
+        fname, img, caption = self.ds[idx]
+
+        img = [self.transform(im) for im in img]
+
+        return fname, img, caption
+
+    def __len__(self):
+        return len(self.ds)
