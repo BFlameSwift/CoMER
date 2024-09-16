@@ -12,7 +12,7 @@ trainer:
         mode: max
         filename: '{epoch}-{step}-{val_ExpRate:.4f}'
   # gpus: 1
-  gpus: 0, 1, 2, 3
+  gpus: 0,1,2,3
   accelerator: ddp
   check_val_every_n_epoch: 2
   max_epochs: 300
@@ -40,9 +40,11 @@ model:
   learning_rate: 0.08
   patience: 20
 data:
-  zipfile_path: data.zip
-  test_year: 2014
+  folder: ./data/crohme
+  test_folder: 2014
+  val_folder: 2014
+  max_size: 320000
   train_batch_size: 8
   eval_batch_size: 4
   num_workers: 5
-  scale_aug: true
+  scale_aug: false

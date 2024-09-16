@@ -37,7 +37,8 @@ cd CoMER
 # install project   
 conda create -y -n CoMER python=3.7
 conda activate CoMER
-conda install pytorch=1.8.1 torchvision=0.2.2 cudatoolkit=11.1 pillow=8.4.0 -c pytorch -c nvidia
+conda install pytorch=1.8.1  cudatoolkit=11.1 pillow=8.4.0 -c pytorch -c nvidia
+pip install torchvision==0.2.2
 # training dependency
 conda install pytorch-lightning=1.4.9 torchmetrics=0.6.0 -c conda-forge
 # evaluating dependency
@@ -46,7 +47,11 @@ pip install -e .
  ```
 
 ## Training
-Next, navigate to CoMER folder and run `train.py`. It may take **7~8** hours on **4** NVIDIA 2080Ti gpus using ddp.
+First, navigate to CoMER folder and unzip `data.zip` to get the CROHME dataset.
+```bash
+unzip -q data.zip
+```
+Next,  run `train.py`. It may take **7~8** hours on **4** NVIDIA 2080Ti gpus using ddp.
 ```bash
 # train CoMER(Fusion) model using 4 gpus and ddp
 python train.py --config config.yaml  
